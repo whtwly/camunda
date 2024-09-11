@@ -16,8 +16,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class StandaloneCamundaTest extends AbstractStandaloneCamundaTest {
 
-  @TestZeebe
-  final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  @TestZeebe final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
 
   @Override
   TestStandaloneCamunda getTestStandaloneCamunda() {
