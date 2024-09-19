@@ -24,7 +24,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @ZeebeIntegration
 public class StandaloneCamundaWithRdbmsMariaDBTest extends AbstractStandaloneCamundaTest {
 
-  private static MariaDBContainer<?> MARIADB = new MariaDBContainer<>("mariadb:11.4")
+  private final static MariaDBContainer<?> MARIADB = new MariaDBContainer<>("mariadb:11.4")
           .withDatabaseName("camunda")
           .withUsername("camunda")
           .withPassword("demo")
@@ -37,7 +37,6 @@ public class StandaloneCamundaWithRdbmsMariaDBTest extends AbstractStandaloneCam
                   )
               )
           ));
-  ;
 
   @TestZeebe
   final TestStandaloneCamunda testStandaloneCamunda =

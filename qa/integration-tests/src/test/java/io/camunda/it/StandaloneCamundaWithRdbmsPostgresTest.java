@@ -39,7 +39,6 @@ public class StandaloneCamundaWithRdbmsPostgresTest extends AbstractStandaloneCa
                   )
               )
           ));
-  ;
 
   @TestZeebe
   final TestStandaloneCamunda testStandaloneCamunda =
