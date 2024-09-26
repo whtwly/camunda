@@ -84,6 +84,7 @@ jobs:
       - uses: ./.github/actions/build-operate-setup
         name: Build setup
         with:
+          maven-cache-key-modifier: operate-tests
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 

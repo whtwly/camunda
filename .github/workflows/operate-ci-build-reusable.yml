@@ -154,12 +154,8 @@ jobs:
         env:
           MVNW_VERBOSE: true
         run: |
-<<<<<<< HEAD
-          mvn -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-=======
           ./mvnw --version
           ./mvnw -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
->>>>>>> d0b9876fe25 (ci: (do not merge) verbose)
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics
