@@ -12,8 +12,8 @@
     <Logger name="io.camunda.zeebe" level="info"/>
     <Logger name="io.camunda.exporter" level="debug"/>
     <Logger name="io.camunda.search" level="debug"/>
-    <Logger name="io.camunda.db.rdbms" level="debug"/>
-    <Logger name="io.camunda.db.rdbms.sql" level="info"/>
+    <Logger name="io.camunda.db.rdbms" level="trace"/>
+    <Logger name="io.camunda.db.rdbms.sql" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
     <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="info"/>
 

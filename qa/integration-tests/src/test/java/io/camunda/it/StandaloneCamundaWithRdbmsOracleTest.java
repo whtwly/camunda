@@ -18,25 +18,22 @@ import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.oracle.OracleContainer;
 
 @ZeebeIntegration
-public class StandaloneCamundaWithRdbmsPostgresTest extends AbstractStandaloneCamundaTest {
+public class StandaloneCamundaWithRdbmsOracleTest extends AbstractStandaloneCamundaTest {
 
-  private static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:16-alpine")
-          .withDatabaseName("camunda")
+  private static final OracleContainer ORACLE =
+      new OracleContainer("gvenzl/oracle-free:slim-faststart")
           .withUsername("camunda")
           .withPassword("demo")
           //TODO ... DIRTY!!! Find another way to get the random port from container on startup
           .withCreateContainerCmdModifier(cmd -> cmd.withHostConfig(
               new HostConfig().withPortBindings(
                   new PortBinding(
-                      Ports.Binding.bindPort(55432),
-                      new ExposedPort(5432)
+                      Ports.Binding.bindPort(11521),
+                      new ExposedPort(1521)
                   )
               )
           ));
@@ -45,7 +42,7 @@ public class StandaloneCamundaWithRdbmsPostgresTest extends AbstractStandaloneCa
   final TestStandaloneCamunda testStandaloneCamunda =
       TestStandaloneCamunda.withRdbms()
           .withProperty("camunda.database.type", "rdbms")
-          .withProperty("spring.datasource.url", "jdbc:postgresql://localhost:55432/camunda")
+          .withProperty("spring.datasource.url", "jdbc:oracle:thin:@localhost:11521/FREEPDB1")
           .withProperty("spring.datasource.username", "camunda")
           .withProperty("spring.datasource.password", "demo")
           .withProperty("mybatis.mapper-locations", "classpath:mapper/**/*-mapper.xml")
@@ -53,12 +50,12 @@ public class StandaloneCamundaWithRdbmsPostgresTest extends AbstractStandaloneCa
 
   @BeforeAll
   static void setUp() {
-    POSTGRES.start();
+    ORACLE.start();
   }
 
   @AfterAll
   static void tearDown() {
-    POSTGRES.stop();
+    ORACLE.stop();
   }
 
   @Override

@@ -13,6 +13,7 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.qa.util.cluster.TestClient;
+import io.camunda.qa.util.cluster.TestRestV2ApiClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -33,7 +34,7 @@ public class StandaloneCamundaWithRdbmsMariaDBTest extends AbstractStandaloneCam
               new HostConfig().withPortBindings(
                   new PortBinding(
                       Ports.Binding.bindPort(33306),
-                      new ExposedPort(33306)
+                      new ExposedPort(3306)
                   )
               )
           ));
@@ -64,7 +65,7 @@ public class StandaloneCamundaWithRdbmsMariaDBTest extends AbstractStandaloneCam
   }
 
   @Override
-  TestClient getTestClient() {
+  TestRestV2ApiClient getTestClient() {
     return testStandaloneCamunda.newRestV2ApiClient();
   }
 }

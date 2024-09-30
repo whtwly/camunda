@@ -8,6 +8,7 @@
 package io.camunda.it;
 
 import io.camunda.qa.util.cluster.TestClient;
+import io.camunda.qa.util.cluster.TestRestV2ApiClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -24,7 +25,7 @@ public class StandaloneCamundaTest extends AbstractStandaloneCamundaTest {
   }
 
   @Override
-  TestClient getTestClient() {
-    return testStandaloneCamunda.newOperateClient();
+  TestRestV2ApiClient getTestClient() {
+    return testStandaloneCamunda.newRestV2ApiClient();
   }
 }

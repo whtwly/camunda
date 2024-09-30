@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestClient;
 import io.camunda.qa.util.cluster.TestClient.ProcessInstanceResult;
+import io.camunda.qa.util.cluster.TestRestV2ApiClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
@@ -22,7 +24,7 @@ abstract class AbstractStandaloneCamundaTest {
 
   abstract TestStandaloneCamunda getTestStandaloneCamunda();
 
-  abstract TestClient getTestClient();
+  abstract TestRestV2ApiClient getTestClient();
 
   @Test
   public void shouldCreateAndRetrieveInstance() {
@@ -57,8 +59,12 @@ abstract class AbstractStandaloneCamundaTest {
         .timeout(Duration.ofMinutes(1))
         .untilAsserted(
             () -> {
-              final Either<Exception, ProcessInstanceResult> eitherProcessInstanceResult =
+              final Either<Exception, ProcessInstanceSearchQueryResponse> eitherProcessInstanceResult =
                   testClient.getProcessInstanceWith(processInstanceEvent.getProcessInstanceKey());
+
+              if (eitherProcessInstanceResult.isLeft()) {
+                System.out.println(eitherProcessInstanceResult.getLeft().getMessage());
+              }
 
               // has no exception
               assertThat(eitherProcessInstanceResult.isRight())
@@ -67,19 +73,13 @@ abstract class AbstractStandaloneCamundaTest {
 
               final var processInstanceResult = eitherProcessInstanceResult.get();
 
-              // V2 returns a page instead of total
-              long total = 0;
-              if (processInstanceResult.page() != null) {
-                total = processInstanceResult.page().totalItems();
-              } else {
-                total = processInstanceResult.total();
-              }
+              long total = processInstanceResult.getPage().getTotalItems();
               assertThat(total)
-                  .withFailMessage("Expect to read a process instance from ES")
+                  .withFailMessage("Expect to read a process instance from RDBMS")
                   .isGreaterThan(0);
 
-              assertThat(processInstanceResult.processInstances().getFirst().getKey())
-                  .withFailMessage("Expect to read the expected process instance from ES")
+              assertThat(processInstanceResult.getItems().getFirst().getProcessInstanceKey())
+                  .withFailMessage("Expect to read the expected process instance from RDBMS")
                   .isEqualTo(processInstanceEvent.getProcessInstanceKey());
             });
   }

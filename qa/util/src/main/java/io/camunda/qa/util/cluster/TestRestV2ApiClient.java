@@ -10,6 +10,7 @@ package io.camunda.qa.util.cluster;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.URI;
@@ -19,7 +20,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 
-public class TestRestV2ApiClient implements AutoCloseable, TestClient {
+public class TestRestV2ApiClient implements AutoCloseable {
 
   private static final ObjectMapper OBJECT_MAPPER =
       (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -61,7 +62,7 @@ public class TestRestV2ApiClient implements AutoCloseable, TestClient {
     }
   }
 
-  private Either<Exception, ProcessInstanceResult> mapProcessInstanceResult(
+  private Either<Exception, ProcessInstanceSearchQueryResponse> mapProcessInstanceResult(
       final HttpResponse<String> response) {
     if (response.statusCode() != 200) {
       return Either.left(
@@ -72,14 +73,13 @@ public class TestRestV2ApiClient implements AutoCloseable, TestClient {
     }
 
     try {
-      return Either.right(OBJECT_MAPPER.readValue(response.body(), ProcessInstanceResult.class));
+      return Either.right(OBJECT_MAPPER.readValue(response.body(), ProcessInstanceSearchQueryResponse.class));
     } catch (final JsonProcessingException e) {
       return Either.left(e);
     }
   }
 
-  @Override
-  public Either<Exception, ProcessInstanceResult> getProcessInstanceWith(final long key) {
+  public Either<Exception, ProcessInstanceSearchQueryResponse> getProcessInstanceWith(final long key) {
     return createProcessInstanceRequest(key)
         .flatMap(this::sendProcessInstanceQuery)
         .flatMap(this::mapProcessInstanceResult);
