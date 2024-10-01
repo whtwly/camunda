@@ -74,8 +74,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.nio.entity.NStringEntity;
@@ -114,13 +112,15 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
+import org.slf4j.Logger;
 
-@Slf4j
 public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeOpenSearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchDatabaseTestService.class);
 
   private String opensearchDatabaseVersion;
 
@@ -235,10 +235,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasResponse aliasResponse =
-        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final GetAliasResponse aliasResponse;
+    try {
+      aliasResponse = getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
     return indexNameToAliasMap.entrySet().stream()
         .filter(
@@ -299,7 +302,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
   }
 
-  @SneakyThrows
   @Override
   public void deleteAllIndicesContainingTerm(final String indexTerm) {
     getOptimizeOpenSearchClient()
@@ -439,7 +441,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     deleteIndices(indexNames);
   }
 
-  @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
     final String[] indicesToDelete =
@@ -453,7 +454,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  @SneakyThrows
   @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     final GetIndexResponse allIndices =
@@ -472,17 +472,21 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  @SneakyThrows
   @Override
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
     // Since we are retrieving zeebe records, we cannot use the rich opensearch client,
     // because it will add optimize prefixes to the request
-    final GetIndexResponse allIndices =
-        getOptimizeOpenSearchClient()
-            .getOpenSearchClient()
-            .indices()
-            .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true).build());
+    final GetIndexResponse allIndices;
+    try {
+      allIndices =
+          getOptimizeOpenSearchClient()
+              .getOpenSearchClient()
+              .indices()
+              .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true).build());
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
 
     final String[] indicesToDelete =
         allIndices.result().keySet().stream()
@@ -496,14 +500,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  @SneakyThrows
   @Override
   public void updateZeebeRecordsForPrefix(
       final String zeebeRecordPrefix, final String indexName, final String updateScript) {
     updateZeebeRecordsByQuery(zeebeRecordPrefix, indexName, QueryDSL.matchAll(), updateScript);
   }
 
-  @SneakyThrows
   @Override
   public void updateZeebeRecordsWithPositionForPrefix(
       final String zeebeRecordPrefix,
@@ -517,7 +519,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         updateScript);
   }
 
-  @SneakyThrows
   @Override
   public void updateZeebeRecordsOfBpmnElementTypeForPrefix(
       final String zeebeRecordPrefix,
@@ -532,7 +533,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         updateScript);
   }
 
-  @SneakyThrows
   @Override
   public void updateUserTaskDurations(
       final String processInstanceId, final String processDefinitionKey, final long duration) {
@@ -552,17 +552,19 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public boolean indexExistsCheckWithoutApplyingOptimizePrefix(final String indexName) {
     // Cannot use the rich client here because we need an unprefixed index name
-    return getOptimizeOpenSearchClient()
-        .getOpenSearchClient()
-        .indices()
-        .exists(new ExistsRequest.Builder().index(indexName).build())
-        .value();
+    try {
+      return getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .indices()
+          .exists(new ExistsRequest.Builder().index(indexName).build())
+          .value();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   @Override
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
       final String dbType, final String engine) {
@@ -592,15 +594,17 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public long countRecordsByQuery(
       final TermsQueryContainer queryContainer, final String expectedIndex) {
-    return getOptimizeOpenSearchClient()
-        .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
+    try {
+      return getOptimizeOpenSearchClient()
+          .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   @Override
-  @SneakyThrows
   public <T> List<T> getZeebeExportedRecordsByQuery(
       final String exportIndex,
       final TermsQueryContainer queryForZeebeRecords,
@@ -608,14 +612,18 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final BoolQuery query = queryForZeebeRecords.toOpenSearchQuery();
     final SearchRequest.Builder searchRequest =
         RequestDSL.searchRequestBuilder().index(exportIndex).query(query.toQuery()).size(100);
-    return getOptimizeOpenSearchClient()
-        .getOpenSearchClient()
-        .search(searchRequest.build(), zeebeRecordClass)
-        .hits()
-        .hits()
-        .stream()
-        .map(Hit::source)
-        .toList();
+    try {
+      return getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .search(searchRequest.build(), zeebeRecordClass)
+          .hits()
+          .hits()
+          .stream()
+          .map(Hit::source)
+          .toList();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   @Override
@@ -657,12 +665,15 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public String getDatabaseVersion() {
     if (opensearchDatabaseVersion == null) {
-      opensearchDatabaseVersion =
-          OpenSearchClientBuilder.getCurrentOSVersion(
-              getOptimizeOpenSearchClient().getOpenSearchClient());
+      try {
+        opensearchDatabaseVersion =
+            OpenSearchClientBuilder.getCurrentOSVersion(
+                getOptimizeOpenSearchClient().getOpenSearchClient());
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException(e);
+      }
     }
     return opensearchDatabaseVersion;
   }
@@ -679,7 +690,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public void updateProcessInstanceNestedDocLimit(
       final String processDefinitionKey,
       final int nestedDocLimit,
@@ -691,14 +701,19 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             .getIndexNameService()
             .getOptimizeIndexNameWithVersionForAllIndicesOf(
                 new ProcessInstanceIndexOS(processDefinitionKey));
-    osClient
-        .getRichOpenSearchClient()
-        .index()
-        .putSettings(
-            new PutIndicesSettingsRequest.Builder()
-                .settings(OpenSearchIndexSettingsBuilder.buildDynamicSettings(configurationService))
-                .index(indexName)
-                .build());
+    try {
+      osClient
+          .getRichOpenSearchClient()
+          .index()
+          .putSettings(
+              new PutIndicesSettingsRequest.Builder()
+                  .settings(
+                      OpenSearchIndexSettingsBuilder.buildDynamicSettings(configurationService))
+                  .index(indexName)
+                  .build());
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   @Override
@@ -800,7 +815,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public Long getImportedActivityCount() {
     final Aggregation subAggregation =
         AggregationDSL.valueCountAggregation(
@@ -835,10 +849,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  @SneakyThrows
   public List<String> getAllIndicesWithWriteAlias(final String aliasNameWithPrefix) {
-    final GetAliasResponse aliasResponse =
-        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final GetAliasResponse aliasResponse;
+    try {
+      aliasResponse = getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
     final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
     return indexNameToAliasMap.entrySet().stream()
         .filter(
@@ -920,7 +937,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     return getOptimizeOpenSearchClient().getIndexNameService();
   }
 
-  @SneakyThrows
   private <T> List<T> getAllDocumentsOfIndicesAs(
       final String[] indexNames, final Class<T> type, final Query query) {
     final SearchRequest.Builder searchReqBuilder =

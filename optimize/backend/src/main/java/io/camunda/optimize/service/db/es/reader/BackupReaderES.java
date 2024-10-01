@@ -34,20 +34,24 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class BackupReaderES implements BackupReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+
+  public BackupReaderES(
+      OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void validateRepositoryExistsOrFail() {

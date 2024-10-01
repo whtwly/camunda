@@ -21,12 +21,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
+
   private static final String PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX =
       "optimize-process-instance-archive-";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(Upgrade313To86PlanFactory.class);
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
