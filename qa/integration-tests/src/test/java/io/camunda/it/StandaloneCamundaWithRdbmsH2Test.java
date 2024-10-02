@@ -7,8 +7,6 @@
  */
 package io.camunda.it;
 
-import io.camunda.exporter.rdbms.RdbmsExporter;
-import io.camunda.qa.util.cluster.TestClient;
 import io.camunda.qa.util.cluster.TestRestV2ApiClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -25,8 +23,9 @@ public class StandaloneCamundaWithRdbmsH2Test extends AbstractStandaloneCamundaT
           .withProperty("spring.datasource.username", "sa")
           .withProperty("spring.datasource.password", null)
           .withProperty("spring.datasource.driverClassName", "org.h2.Driver")
+          .withProperty("spring.liquibase.enabled", "false")
           .withProperty("mybatis.mapper-locations", "classpath:mapper/**/*-mapper.xml")
-          .withExporter("rdbms", cfg -> cfg.setClassName(RdbmsExporter.class.getName()));
+          .withExporter("rdbms", cfg -> cfg.setClassName("RdbmsExporter"));
 
   @Override
   TestStandaloneCamunda getTestStandaloneCamunda() {

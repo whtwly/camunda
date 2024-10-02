@@ -21,6 +21,7 @@ import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
+import io.camunda.zeebe.broker.RdbmsExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -130,7 +131,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public static TestStandaloneCamunda withRdbms() {
-    return new TestStandaloneCamunda(RdbmsConfiguration.class).setRdbmsEnabled(true);
+    return new TestStandaloneCamunda(RdbmsExporterConfiguration.class).setRdbmsEnabled(true);
   }
 
   @Override
