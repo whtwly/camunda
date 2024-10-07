@@ -36,6 +36,7 @@ import io.atomix.cluster.messaging.impl.DefaultClusterEventService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
+import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -127,7 +128,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
         unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
 
     discoveryProvider = buildLocationProvider(config);
-    membershipProtocol = buildMembershipProtocol(config);
+    membershipProtocol = buildMembershipProtocol(config, actorSchedulerName);
     membershipService =
         buildClusterMembershipService(
             config, this, discoveryProvider, membershipProtocol, version, actorSchedulerName);
@@ -330,7 +331,10 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   /** Builds the group membership protocol. */
   @SuppressWarnings("unchecked")
-  protected static GroupMembershipProtocol buildMembershipProtocol(final ClusterConfig config) {
+  protected static GroupMembershipProtocol buildMembershipProtocol(
+      final ClusterConfig config, final String actorSchedulerName) {
+    ((SwimMembershipProtocolConfig) config.getProtocolConfig())
+        .setActorSchedulerName(actorSchedulerName);
     return config.getProtocolConfig().getType().newProtocol(config.getProtocolConfig());
   }
 

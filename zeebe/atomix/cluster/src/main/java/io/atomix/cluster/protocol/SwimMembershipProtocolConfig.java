@@ -45,6 +45,8 @@ public class SwimMembershipProtocolConfig extends GroupMembershipProtocolConfig 
   private Duration failureTimeout = Duration.ofMillis(DEFAULT_FAILURE_TIMEOUT);
   private Duration syncInterval = Duration.ofMillis(DEFAULT_SYNC_INTERVAL);
 
+  private String actorSchedulerName;
+
   /**
    * Returns whether to broadcast member updates to all peers.
    *
@@ -257,6 +259,15 @@ public class SwimMembershipProtocolConfig extends GroupMembershipProtocolConfig 
     checkArgument(
         !syncInterval.isNegative() && !syncInterval.isZero(), "syncInterval must be positive");
     this.syncInterval = syncInterval;
+    return this;
+  }
+
+  public String getActorSchedulerName() {
+    return actorSchedulerName;
+  }
+
+  public SwimMembershipProtocolConfig setActorSchedulerName(final String actorSchedulerName) {
+    this.actorSchedulerName = actorSchedulerName;
     return this;
   }
 

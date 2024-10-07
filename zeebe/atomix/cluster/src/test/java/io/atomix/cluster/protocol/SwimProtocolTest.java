@@ -356,7 +356,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeInterval(PROBE_INTERVAL)
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
-                    .setSyncInterval(SYNC_INTERVAL)));
+                    .setSyncInterval(SYNC_INTERVAL)
+                    .setActorSchedulerName("testing")));
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);

@@ -22,6 +22,11 @@ import java.time.Duration;
 public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilder {
   private final SwimMembershipProtocolConfig config = new SwimMembershipProtocolConfig();
 
+  public SwimMembershipProtocolBuilder withActorSchedulerName(final String actorSchedulerName) {
+    config.setActorSchedulerName(actorSchedulerName);
+    return this;
+  }
+
   /**
    * Sets whether to broadcast member updates to all peers.
    *
