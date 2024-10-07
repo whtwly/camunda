@@ -65,16 +65,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
-    switch (ConnectionTypes.from(configuration.getConnect().getType())) {
-      case ELASTICSEARCH:
-        clientAdapter = new ElasticsearchAdapter();
-        break;
-      case OPENSEARCH:
-        clientAdapter = new OpensearchAdapter();
-      default:
-        throw new ExporterException(
-            "Unsupported database type: " + configuration.getConnect().getType());
-    }
+    createClientAdapter();
     // TODO validate configuration
     context.setFilter(new ElasticsearchRecordFilter());
     LOG.debug("Exporter configured with {}", configuration);
@@ -123,6 +114,19 @@ public class CamundaExporter implements Exporter {
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition();
+    }
+  }
+
+  private void createClientAdapter() {
+    switch (ConnectionTypes.from(configuration.getConnect().getType())) {
+      case ELASTICSEARCH:
+        clientAdapter = new ElasticsearchAdapter();
+        break;
+      case OPENSEARCH:
+        clientAdapter = new OpensearchAdapter();
+      default:
+        throw new ExporterException(
+            "Unsupported database type: " + configuration.getConnect().getType());
     }
   }
 
