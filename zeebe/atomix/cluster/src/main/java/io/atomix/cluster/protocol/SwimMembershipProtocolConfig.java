@@ -262,13 +262,14 @@ public class SwimMembershipProtocolConfig extends GroupMembershipProtocolConfig 
     return this;
   }
 
+  @Override
   public String getActorSchedulerName() {
     return actorSchedulerName;
   }
 
-  public SwimMembershipProtocolConfig setActorSchedulerName(final String actorSchedulerName) {
+  @Override
+  public void setActorSchedulerName(final String actorSchedulerName) {
     this.actorSchedulerName = actorSchedulerName;
-    return this;
   }
 
   @Override

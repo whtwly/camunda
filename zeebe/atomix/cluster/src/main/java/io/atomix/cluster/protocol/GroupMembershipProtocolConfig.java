@@ -20,4 +20,11 @@ import io.atomix.utils.config.TypedConfig;
 
 /** Group membership protocol configuration. */
 public abstract class GroupMembershipProtocolConfig
-    implements TypedConfig<GroupMembershipProtocol.Type> {}
+    implements TypedConfig<GroupMembershipProtocol.Type> {
+
+  public String getActorSchedulerName() {
+    return "";
+  }
+
+  public void setActorSchedulerName(final String actorSchedulerName) {}
+}

@@ -36,7 +36,6 @@ import io.atomix.cluster.messaging.impl.DefaultClusterEventService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -105,12 +104,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   public AtomixCluster(
       final ClusterConfig config, final Version version, final String actorSchedulerName) {
-    this(
-        config,
-        version,
-        buildMessagingService(config, actorSchedulerName),
-        buildUnicastService(config, actorSchedulerName),
-        actorSchedulerName);
+    this(config, version, null, null, actorSchedulerName);
   }
 
   protected AtomixCluster(
@@ -119,19 +113,15 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final ManagedMessagingService messagingService,
       final ManagedUnicastService unicastService,
       final String actorSchedulerName) {
-
+    config.getProtocolConfig().setActorSchedulerName(actorSchedulerName);
     this.messagingService =
-        messagingService != null
-            ? messagingService
-            : buildMessagingService(config, actorSchedulerName);
-    this.unicastService =
-        unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
+        messagingService != null ? messagingService : buildMessagingService(config);
+    this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
 
     discoveryProvider = buildLocationProvider(config);
-    membershipProtocol = buildMembershipProtocol(config, actorSchedulerName);
+    membershipProtocol = buildMembershipProtocol(config);
     membershipService =
-        buildClusterMembershipService(
-            config, this, discoveryProvider, membershipProtocol, version, actorSchedulerName);
+        buildClusterMembershipService(config, this, discoveryProvider, membershipProtocol, version);
     communicationService =
         buildClusterMessagingService(
             getMembershipService(), getMessagingService(), getUnicastService());
@@ -299,23 +289,21 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   /** Builds a default messaging service. */
-  protected static ManagedMessagingService buildMessagingService(
-      final ClusterConfig config, final String actorSchedulerName) {
+  protected static ManagedMessagingService buildMessagingService(final ClusterConfig config) {
     return new NettyMessagingService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
-        actorSchedulerName);
+        config.getProtocolConfig().getActorSchedulerName());
   }
 
   /** Builds a default unicast service. */
-  protected static ManagedUnicastService buildUnicastService(
-      final ClusterConfig config, final String actorSchedulerName) {
+  protected static ManagedUnicastService buildUnicastService(final ClusterConfig config) {
     return new NettyUnicastService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
-        actorSchedulerName);
+        config.getProtocolConfig().getActorSchedulerName());
   }
 
   /** Builds a member location provider. */
@@ -331,10 +319,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   /** Builds the group membership protocol. */
   @SuppressWarnings("unchecked")
-  protected static GroupMembershipProtocol buildMembershipProtocol(
-      final ClusterConfig config, final String actorSchedulerName) {
-    ((SwimMembershipProtocolConfig) config.getProtocolConfig())
-        .setActorSchedulerName(actorSchedulerName);
+  protected static GroupMembershipProtocol buildMembershipProtocol(final ClusterConfig config) {
     return config.getProtocolConfig().getType().newProtocol(config.getProtocolConfig());
   }
 
@@ -344,8 +329,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final BootstrapService bootstrapService,
       final NodeDiscoveryProvider discoveryProvider,
       final GroupMembershipProtocol membershipProtocol,
-      final Version version,
-      final String actorSchedulerName) {
+      final Version version) {
     // If the local node has not be configured, create a default node.
     final Member localMember =
         Member.builder()
@@ -358,7 +342,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
             .build();
     return new DefaultClusterMembershipService(
         localMember,
-        actorSchedulerName,
         version,
         new DefaultNodeDiscoveryService(bootstrapService, localMember, discoveryProvider),
         bootstrapService,
