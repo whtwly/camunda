@@ -1,0 +1,34 @@
+---
+name: Setup Maven Distribution 
+
+
+description: Abstract setup of Maven distributions, relying on mvnw wrapper or a well-known GitHub action
+
+inputs:
+  maven-version:
+    description: Target Maven version
+    required: true
+  set-mvnw:
+    description: |
+      Update mvnw wrapper configurations to use target version of Maven.
+      If enabled, Maven is not installed by the composite action.
+    default: "false"
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install Maven
+      if: inputs.set-mvnw != 'true'
+      uses: stCarolas/setup-maven@v5
+      with:
+        maven-version: ${{ inputs.maven-version }}
+    - name: Update Maven version used by mvnw wrapper
+      if: inputs.set-mvnw == 'true'
+      shell: bash
+      env:
+        MAVEN_VERSION: ${{ inputs.maven-version }}
+        MAVEN_WRAPPER_PROPERTIES_PATH: .mvn/wrapper/maven-wrapper.properties
+      run: |
+        sed -i "/distributionUrl=/ s/[[:digit:]]\.[[:digit:]]\.[[:digit:]]/${MAVEN_VERSION}/g" "${MAVEN_WRAPPER_PROPERTIES_PATH}"
+        cat "${MAVEN_WRAPPER_PROPERTIES_PATH}"
