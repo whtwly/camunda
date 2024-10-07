@@ -89,11 +89,16 @@ jobs:
 
       # Build: all Maven artifacts
       - name: Build Maven
+        env:
+          MVNW_VERBOSE: true
         run: |
-          mvn clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw --version
+          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}
+        env:
+          MVNW_VERBOSE: true
         run: |
           ${{ inputs.command }}
 

@@ -97,8 +97,11 @@ jobs:
       #########################################################################
       # Build: maven artifacts and Docker images
       - name: Build Maven
+        env:
+          MVNW_VERBOSE: true
         run: |
-          mvn clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw --version
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging
@@ -148,8 +151,15 @@ jobs:
       # Deploy Nexus SNAPSHOT
       - name: Deploy - Nexus SNAPSHOT
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        env:
+          MVNW_VERBOSE: true
         run: |
+<<<<<<< HEAD
           mvn -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+=======
+          ./mvnw --version
+          ./mvnw -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+>>>>>>> d0b9876fe25 (ci: (do not merge) verbose)
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics
