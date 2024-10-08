@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
@@ -167,7 +168,9 @@ public class EventAppliersTest {
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
             .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
-            .filter(intent -> !(intent instanceof CheckpointIntent));
+            .filter(intent -> !(intent instanceof CheckpointIntent))
+            // todo delete this filter after https://github.com/camunda/camunda/issues/22841
+            .filter(intent -> !(intent instanceof TenantIntent));
 
     // when
     eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
