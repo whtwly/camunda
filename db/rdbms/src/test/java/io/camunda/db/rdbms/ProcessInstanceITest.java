@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
@@ -19,6 +20,8 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.sort.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -54,7 +58,7 @@ public class ProcessInstanceITest {
         .version(1)
     ));
 
-    var instance = rdbmsService.getProcessInstanceRdbmsService().findOne(42L);
+    final var instance = rdbmsService.getProcessInstanceRdbmsService().findOne(42L);
 
     assertThat(instance).isNotNull();
     assertThat(instance.key()).isEqualTo(42L);
@@ -80,17 +84,18 @@ public class ProcessInstanceITest {
         .version(1)
     ));
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build(),
-        ProcessInstanceSort.of(b -> b),
-        SearchQueryPage.of(b -> b.from(0).size(10))
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build(),
+            ProcessInstanceSort.of(b -> b),
+            SearchQueryPage.of(b -> b.from(0).size(10))
+        ));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
 
-    var instance = searchResult.hits().getFirst();
+    final var instance = searchResult.hits().getFirst();
 
     assertThat(instance.key()).isEqualTo(42L);
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process");
@@ -106,11 +111,12 @@ public class ProcessInstanceITest {
   public void shouldFindAllProcessInstancePaged() {
     createAndSaveRandomProcessInstances();
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder().build(),
-        ProcessInstanceSort.of(b -> b),
-        SearchQueryPage.of(b -> b.from(0).size(5))
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b),
+            SearchQueryPage.of(b -> b.from(0).size(5))
+        ));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -121,11 +127,12 @@ public class ProcessInstanceITest {
   public void shouldFindAllProcessInstancePageIsNull() {
     createAndSaveRandomProcessInstances();
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder().build(),
-        ProcessInstanceSort.of(b -> b),
-        null
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b),
+            null
+        ));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -136,33 +143,16 @@ public class ProcessInstanceITest {
   public void shouldFindAllProcessInstancePageValuesAreNull() {
     createAndSaveRandomProcessInstances();
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder().build(),
-        ProcessInstanceSort.of(b -> b),
-        SearchQueryPage.of(b -> b.from(null).size(null))
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b),
+            SearchQueryPage.of(b -> b.from(null).size(null))
+        ));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.hits()).hasSize(20);
-  }
-
-  @Test
-  public void shouldFindAllProcessInstanceSortedByEndDate() {
-    createAndSaveRandomProcessInstances();
-
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder().build(),
-        ProcessInstanceSort.of(b -> b.endDate().asc()),
-        SearchQueryPage.of(b -> b.from(0).size(20))
-    ));
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(20);
-    final OffsetDateTime firstHit = OffsetDateTime.parse(searchResult.hits().getFirst().endDate());
-    final OffsetDateTime lastHit = OffsetDateTime.parse(searchResult.hits().getLast().endDate());
-    assertThat(firstHit).isBefore(lastHit);
   }
 
   @Test
@@ -180,18 +170,19 @@ public class ProcessInstanceITest {
         .version(1)
     ));
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        new ProcessInstanceFilter.Builder()
-            .processInstanceKeys(42L)
-            .processDefinitionIds("test-process")
-            .processDefinitionKeys(1337L)
-            .states(ProcessInstanceState.ACTIVE.name())
-            .parentProcessInstanceKeys(-1L)
-            .parentFlowNodeInstanceKeys(-1L)
-            .build(),
-        ProcessInstanceSort.of(b -> b),
-        SearchQueryPage.of(b -> b.from(0).size(5))
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder()
+                .processInstanceKeys(42L)
+                .processDefinitionIds("test-process")
+                .processDefinitionKeys(1337L)
+                .states(ProcessInstanceState.ACTIVE.name())
+                .parentProcessInstanceKeys(-1L)
+                .parentFlowNodeInstanceKeys(-1L)
+                .build(),
+            ProcessInstanceSort.of(b -> b),
+            SearchQueryPage.of(b -> b.from(0).size(5))
+        ));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
@@ -200,7 +191,7 @@ public class ProcessInstanceITest {
 
   @ParameterizedTest
   @MethodSource("shouldFindProcessInstanceWithSpecificFilterParameters")
-  public void shouldFindProcessInstanceWithSpecificFilter(ProcessInstanceFilter filter) {
+  public void shouldFindProcessInstanceWithSpecificFilter(final ProcessInstanceFilter filter) {
     createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
         .processDefinitionKey(1337L)
         .bpmnProcessId("test-process")
@@ -220,16 +211,386 @@ public class ProcessInstanceITest {
         .version(1)
     ));
 
-    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
-        filter,
-        ProcessInstanceSort.of(b -> b),
-        SearchQueryPage.of(b -> b.from(0).size(5))
-    ));
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            filter,
+            ProcessInstanceSort.of(b -> b),
+            SearchQueryPage.of(b -> b.from(0).size(5))
+        ));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
     assertThat(searchResult.hits().getFirst().key()).isEqualTo(42L);
   }
+
+  @Test
+  public void shouldSortAllProcessInstancesByBpmnProcessId() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .bpmnProcessId("test-process-2")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .bpmnProcessId("test-process-1")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .bpmnProcessId("test-process-4")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .bpmnProcessId("test-process-3")
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionId().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstancesByProcessVersion() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .version(2)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .version(1)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .version(4)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .version(3)
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionVersion().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstancesByProcessDefinitionKey() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .processDefinitionKey(2L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .processDefinitionKey(1L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .processDefinitionKey(4L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .processDefinitionKey(3L)
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionKey().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstancesByProcessName() {
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(1L)
+        .name("Test Process 1")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(2L)
+        .name("Test Process 2")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(3L)
+        .name("Test Process 3")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(4L)
+        .name("Test Process 4")));
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .processDefinitionKey(2L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .processDefinitionKey(1L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .processDefinitionKey(4L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .processDefinitionKey(3L)
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionName().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstancesByProcessVersionTag() {
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(1L)
+        .versionTag("Version 1")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(2L)
+        .versionTag("Version 2")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(3L)
+        .versionTag("Version 3")));
+    createAndSaveProcessDefinition(ProcessDefinitionFixtures.createRandomized(b -> b
+        .processDefinitionKey(4L)
+        .versionTag("Version 4")));
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .processDefinitionKey(2L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .processDefinitionKey(1L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .processDefinitionKey(4L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .processDefinitionKey(3L)
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionVersionTag().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstanceByStartDate() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .startDate(NOW.plusDays(2))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .startDate(NOW.plusDays(1))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .startDate(NOW.plusDays(4))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .startDate(NOW.plusDays(3))
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.startDate().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstanceByEndDate() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .endDate(NOW.plusDays(2))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .endDate(NOW.plusDays(1))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .endDate(NOW.plusDays(4))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .endDate(NOW.plusDays(3))
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.endDate().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstanceByParentProcessInstanceKey() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .parentProcessInstanceKey(2L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .parentProcessInstanceKey(1L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .parentProcessInstanceKey(4L)
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .parentProcessInstanceKey(3L)
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.parentProcessInstanceKey().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstanceByTenantId() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .tenantId("tenant-2")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .tenantId("tenant-1")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .tenantId("tenant-4")
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .tenantId("tenant-3")
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.tenantId().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        1L, 4L, 3L);
+  }
+
+  @Test
+  public void shouldSortAllProcessInstanceByBpmnProcessIdAndStartDate() {
+    createAndSaveProcessInstances(List.of(
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(1L)
+            .bpmnProcessId("test-process-2")
+            .startDate(NOW.plusDays(1))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(2L)
+            .bpmnProcessId("test-process-1")
+            .startDate(NOW.plusDays(1))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(3L)
+            .bpmnProcessId("test-process-1")
+            .startDate(NOW.plusDays(2))
+        ),
+        ProcessInstanceFixtures.createRandomized(b -> b
+            .processInstanceKey(4L)
+            .bpmnProcessId("test-process-2")
+            .startDate(NOW.plusDays(2))
+        )
+    ));
+
+    final var searchResult = rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            ProcessInstanceSort.of(b -> b.processDefinitionId().asc().startDate().asc()),
+            SearchQueryPage.of(b -> b)
+        )).hits();
+
+    assertThat(searchResult).hasSize(4);
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList()).containsExactly(2L,
+        3L, 1L, 4L);
+  }
+
+  @Test
+  public void shouldFailOnUnknownSortingOption() {
+    assertThatThrownBy(() -> rdbmsService.getProcessInstanceRdbmsService()
+        .search(new ProcessInstanceDbFilter(
+            new ProcessInstanceFilter.Builder().build(),
+            new ProcessInstanceSort(List.of(new FieldSorting("foo", SortOrder.ASC))),
+            SearchQueryPage.of(b -> b)
+        )).hits()).isInstanceOf(BadSqlGrammarException.class);
+  }
+
 
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
     return List.of(
@@ -260,25 +621,27 @@ public class ProcessInstanceITest {
     );
   }
 
-  private void createAndSaveProcessDefinition(ProcessDefinitionDbModel processDefinition) {
+  private void createAndSaveProcessDefinition(final ProcessDefinitionDbModel processDefinition) {
     rdbmsService.getProcessDefinitionRdbmsService().save(processDefinition);
     rdbmsService.executionQueue().flush();
   }
 
   private void createAndSaveRandomProcessInstances() {
     for (int i = 0; i < 20; i++) {
-      rdbmsService.getProcessInstanceRdbmsService().create(ProcessInstanceFixtures.createRandomized(b -> b));
+      rdbmsService.getProcessInstanceRdbmsService()
+          .create(ProcessInstanceFixtures.createRandomized(b -> b));
     }
 
     rdbmsService.executionQueue().flush();
   }
 
-  private void createAndSaveProcessInstance(ProcessInstanceDbModel processInstance) {
+  private void createAndSaveProcessInstance(final ProcessInstanceDbModel processInstance) {
     createAndSaveProcessInstances(List.of(processInstance));
   }
 
-  private void createAndSaveProcessInstances(List<ProcessInstanceDbModel> processInstanceList) {
-    for (ProcessInstanceDbModel processInstance : processInstanceList) {
+  private void createAndSaveProcessInstances(
+      final List<ProcessInstanceDbModel> processInstanceList) {
+    for (final ProcessInstanceDbModel processInstance : processInstanceList) {
       rdbmsService.getProcessInstanceRdbmsService().create(processInstance);
     }
     rdbmsService.executionQueue().flush();
