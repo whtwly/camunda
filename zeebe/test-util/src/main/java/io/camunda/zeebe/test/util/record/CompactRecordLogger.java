@@ -504,20 +504,28 @@ public class CompactRecordLogger {
   private String summarizeMessageBatch(final Record<?> record) {
     final var value = (MessageBatchRecordValue) record.getValue();
 
-    final String result = "\"" + "messageKeys:" + "\" " + value.getMessageKeys() + "\"";
+    final var result =
+        new StringBuilder()
+            .append("\"")
+            .append("messageKeys:")
+            .append("\" ")
+            .append(value.getMessageKeys())
+            .append("\"");
 
-    return result;
+    return result.toString();
   }
 
   private String summarizeMessageStartEventSubscription(final Record<?> record) {
     final var value = (MessageStartEventSubscriptionRecordValue) record.getValue();
 
-    return "\""
-        + value.getMessageName()
-        + "\""
-        + " starting <process "
-        + formatId(value.getBpmnProcessId())
-        + summarizeVariables(value.getVariables());
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getMessageName())
+        .append("\"")
+        .append(" starting <process ")
+        .append(formatId(value.getBpmnProcessId()))
+        .append(summarizeVariables(value.getVariables()))
+        .toString();
   }
 
   private String summarizeMessageSubscription(final Record<?> record) {
@@ -546,19 +554,24 @@ public class CompactRecordLogger {
 
   private String summarizeProcessInstance(final Record<?> record) {
     final var value = (ProcessInstanceRecordValue) record.getValue();
-    return value.getBpmnElementType()
-        + " "
-        + formatId(value.getElementId())
-        + summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey());
+    return new StringBuilder()
+        .append(value.getBpmnElementType())
+        .append(" ")
+        .append(formatId(value.getElementId()))
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .toString();
   }
 
   private String summarizeProcessInstanceCreation(final Record<?> record) {
     final var value = (ProcessInstanceCreationRecordValue) record.getValue();
-    return "new <process "
-        + formatId(value.getBpmnProcessId())
-        + ">"
-        + summarizeStartInstructions(value.getStartInstructions())
-        + summarizeVariables(value.getVariables());
+    return new StringBuilder()
+        .append("new <process ")
+        .append(formatId(value.getBpmnProcessId()))
+        .append(">")
+        .append(summarizeStartInstructions(value.getStartInstructions()))
+        .append(summarizeVariables(value.getVariables()))
+        .toString();
   }
 
   private String summarizeStartInstructions(
@@ -574,8 +587,10 @@ public class CompactRecordLogger {
 
   private String summarizeProcessInstanceModification(final Record<?> record) {
     final var value = (ProcessInstanceModificationRecordValue) record.getValue();
-    return summarizeActivateInstructions(value.getActivateInstructions())
-        + summarizeTerminateInstructions(value.getTerminateInstructions());
+    return new StringBuilder()
+        .append(summarizeActivateInstructions(value.getActivateInstructions()))
+        .append(summarizeTerminateInstructions(value.getTerminateInstructions()))
+        .toString();
   }
 
   private String summarizeActivateInstructions(
@@ -692,14 +707,16 @@ public class CompactRecordLogger {
 
   private String summarizeError(final Record<?> record) {
     final var value = (ErrorRecordValue) record.getValue();
-    return "\""
-        + value.getExceptionMessage()
-        + "\""
-        + " "
-        + summarizeProcessInformation(null, value.getProcessInstanceKey())
-        + " ("
-        + StringUtils.abbreviate(value.getStacktrace(), "..", 100)
-        + ")";
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getExceptionMessage())
+        .append("\"")
+        .append(" ")
+        .append(summarizeProcessInformation(null, value.getProcessInstanceKey()))
+        .append(" (")
+        .append(StringUtils.abbreviate(value.getStacktrace(), "..", 100))
+        .append(")")
+        .toString();
   }
 
   private String summarizeProcessEvent(final Record<?> record) {
@@ -731,11 +748,14 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionEvaluation(final Record<?> record) {
     final var value = (DecisionEvaluationRecordValue) record.getValue();
-    return value.getDecisionOutput()
-        + summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey())
-        + summarizeVariables(value.getVariables())
-        + summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey())
-        + summarizeElementInformation(value.getElementId(), value.getElementInstanceKey());
+    return new StringBuilder()
+        .append(value.getDecisionOutput())
+        .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
+        .append(summarizeVariables(value.getVariables()))
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
+        .toString();
   }
 
   private String summarizeDecisionInformation(final String decisionId, final long decisionKey) {
@@ -745,13 +765,24 @@ public class CompactRecordLogger {
   private String summarizeSignal(final Record<?> record) {
     final var value = (SignalRecordValue) record.getValue();
 
-    return "\"" + value.getSignalName() + "\"" + summarizeVariables(value.getVariables());
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getSignalName())
+        .append("\"")
+        .append(summarizeVariables(value.getVariables()))
+        .toString();
   }
 
   private String summarizeSignalSubscription(final Record<?> record) {
     final var value = (SignalSubscriptionRecordValue) record.getValue();
 
-    return "\"" + value.getSignalName() + "\"" + " <process " + formatId(value.getBpmnProcessId());
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getSignalName())
+        .append("\"")
+        .append(" <process ")
+        .append(formatId(value.getBpmnProcessId()))
+        .toString();
   }
 
   private String summarizeUserTask(final Record<?> record) {
@@ -843,14 +874,14 @@ public class CompactRecordLogger {
   private String summarizeTenant(final Record<?> record) {
     final var value = (TenantRecordValue) record.getValue();
 
-    return "tenantKey: "
-        + value.getTenantKey()
-        + ", tenantId: "
-        + value.getTenantId()
-        + ", name: "
-        + value.getName()
-        + ", entityKey: "
-        + value.getEntityKey();
+    final StringBuilder builder = new StringBuilder("Tenant[");
+    builder.append("Key=").append(shortenKey(value.getTenantKey()))
+        .append(", Id=").append(formatId(value.getTenantId()))
+        .append(", Name=").append(formatId(value.getName()))
+        .append(", EntityKey=").append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
   }
 
   private String formatPinnedTime(final long time) {
