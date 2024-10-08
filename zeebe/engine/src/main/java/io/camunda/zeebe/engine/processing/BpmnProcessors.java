@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -75,7 +76,7 @@ public final class BpmnProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
+    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState, config);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -123,11 +124,16 @@ public final class BpmnProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new ProcessInstanceCancelProcessor(processingState, writers));
+        new AuthorizableProcessor<>(
+            processingState,
+            writers,
+            config,
+            new ProcessInstanceCancelProcessor(processingState, writers)));
   }
 
   private static void addBpmnStepProcessor(

@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessor.Authorizable;
+import io.camunda.zeebe.engine.processing.streamprocessor.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -19,10 +21,13 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 
 public final class ProcessInstanceCancelProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements Authorizable<ProcessInstanceRecord, ElementInstance> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
@@ -48,9 +53,27 @@ public final class ProcessInstanceCancelProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessInstanceRecord> command) {
+  public Either<Rejection, AuthorizationRequest<ElementInstance>> getAuthorizationRequest(
+      final TypedRecord<ProcessInstanceRecord> command) {
     final var elementInstance = elementInstanceState.getInstance(command.getKey());
 
+    if (elementInstance == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND, String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey())));
+    }
+
+    final var authorizationRequest =
+        new AuthorizationRequest<ElementInstance>(
+                AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .setResource(elementInstance)
+            .addResourceId(elementInstance.getValue().getBpmnProcessId());
+    return Either.right(authorizationRequest);
+  }
+
+  @Override
+  public void processRecord(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
     if (!validateCommand(command, elementInstance)) {
       return;
     }
@@ -66,9 +89,7 @@ public final class ProcessInstanceCancelProcessor
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null
-        || !elementInstance.canTerminate()
-        || elementInstance.getParentKey() > 0) {
+    if (!elementInstance.canTerminate() || elementInstance.getParentKey() > 0) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
