@@ -84,8 +84,6 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
     return delegate.tryHandleError(command, error);
   }
 
-  public record Rejection(RejectionType type, String reason) {}
-
   public interface Authorizable<T extends UnifiedRecordValue, Resource> {
     Either<Rejection, AuthorizationRequest<Resource>> getAuthorizationRequest(
         final TypedRecord<T> command, final CommandControl<T> controller);

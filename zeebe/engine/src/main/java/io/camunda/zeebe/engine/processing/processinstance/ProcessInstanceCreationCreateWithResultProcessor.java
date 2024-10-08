@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
