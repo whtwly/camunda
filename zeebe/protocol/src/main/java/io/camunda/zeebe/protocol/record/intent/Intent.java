@@ -240,6 +240,8 @@ public interface Intent {
         return ClockIntent.valueOf(intent);
       case AUTHORIZATION:
         return AuthorizationIntent.valueOf(intent);
+      case TENANT:
+        return TenantIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
