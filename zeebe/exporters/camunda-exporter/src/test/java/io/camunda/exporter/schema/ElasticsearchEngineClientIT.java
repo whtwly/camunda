@@ -108,7 +108,7 @@ public class ElasticsearchEngineClientIT {
         SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "/mappings.json");
 
     // when
-    elsEngineClient.createIndex(descriptor);
+    elsEngineClient.createIndex(descriptor, new IndexSettings());
 
     // then
     final var index =
@@ -122,7 +122,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index);
+    elsEngineClient.createIndex(index, new IndexSettings());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
 
@@ -199,7 +199,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index);
+    elsEngineClient.createIndex(index, new IndexSettings());
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
     elsEngineClient.putSettings(List.of(index), newSettings);

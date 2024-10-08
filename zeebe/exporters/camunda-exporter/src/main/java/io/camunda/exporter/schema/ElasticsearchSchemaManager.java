@@ -51,11 +51,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .keySet();
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
-        .forEach(descriptor -> createIndexTemplate(descriptor, true));
+        .forEach(
+            descriptor ->
+                elasticsearchClient.createIndexTemplate(
+                    descriptor, getIndexSettings(descriptor.getIndexName()), true));
 
     indexDescriptors.stream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
-        .forEach(elasticsearchClient::createIndex);
+        .forEach(
+            descriptor ->
+                elasticsearchClient.createIndex(
+                    descriptor, getIndexSettings(descriptor.getIndexName())));
   }
 
   @Override
@@ -66,7 +72,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
       if (descriptor instanceof IndexTemplateDescriptor) {
         LOG.info("Updating template: {}", ((IndexTemplateDescriptor) descriptor).getTemplateName());
-        createIndexTemplate((IndexTemplateDescriptor) descriptor, false);
+        elasticsearchClient.createIndexTemplate(
+            (IndexTemplateDescriptor) descriptor,
+            getIndexSettings(descriptor.getIndexName()),
+            false);
       } else {
         LOG.info(
             "Index alias: {}. New fields will be added {}", descriptor.getAlias(), newProperties);
@@ -103,25 +112,22 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void createIndexTemplate(
-      final IndexTemplateDescriptor templateDescriptor, final boolean create) {
+  private IndexSettings getIndexSettings(final String indexName) {
     final var templateReplicas =
         elasticsearchProperties
             .getReplicasByIndexName()
             .getOrDefault(
-                templateDescriptor.getIndexName(),
-                elasticsearchProperties.getDefaultSettings().getNumberOfReplicas());
+                indexName, elasticsearchProperties.getDefaultSettings().getNumberOfReplicas());
     final var templateShards =
         elasticsearchProperties
             .getShardsByIndexName()
             .getOrDefault(
-                templateDescriptor.getIndexName(),
-                elasticsearchProperties.getDefaultSettings().getNumberOfShards());
+                indexName, elasticsearchProperties.getDefaultSettings().getNumberOfShards());
 
     final var settings = new IndexSettings();
     settings.setNumberOfShards(templateShards);
     settings.setNumberOfReplicas(templateReplicas);
 
-    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, create);
+    return settings;
   }
 }
