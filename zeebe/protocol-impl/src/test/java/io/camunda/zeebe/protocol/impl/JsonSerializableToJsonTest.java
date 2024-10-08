@@ -2699,7 +2699,7 @@ final class JsonSerializableToJsonTest {
         """
           {
             "tenantKey": -1,
-            "tenantId": "<default>",
+            "tenantId": "",
             "name": "",
             "entityKey": -1
           }
