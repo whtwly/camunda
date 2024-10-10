@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 
 public final class EngineConfiguration {
@@ -27,6 +28,21 @@ public final class EngineConfiguration {
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
 
+  public static final long DEFAULT_TIMER_LIMIT = Long.MAX_VALUE;
+  public static final long DEFAULT_TIMER_OVER_LIMIT_BACKOFF_MIN_VALUE =
+      Duration.ofSeconds(10).toMillis();
+  public static final long DEFAULT_TIMER_OVER_LIMIT_BACKOFF_MAX_VALUE =
+      Duration.ofSeconds(60).toMillis();
+  public static final double DEFAULT_TIMER_OVER_LIMIT_BACKOFF_FACTOR = 1.6;
+  public static final double DEFAULT_TIMER_OVER_LIMIT_JITTER_FACTOR = 0.1;
+
+  public static final ExponentialBackoff DEFAULT_TIMER_OVER_LIMIT_BACKOFF =
+      new ExponentialBackoff(
+          DEFAULT_TIMER_OVER_LIMIT_BACKOFF_MAX_VALUE,
+          DEFAULT_TIMER_OVER_LIMIT_BACKOFF_MIN_VALUE,
+          DEFAULT_TIMER_OVER_LIMIT_BACKOFF_FACTOR,
+          DEFAULT_TIMER_OVER_LIMIT_JITTER_FACTOR);
+
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -37,6 +53,9 @@ public final class EngineConfiguration {
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
 
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+
+  private long timerLimit = DEFAULT_TIMER_LIMIT;
+  private ExponentialBackoff timerOverLimitBackoff = DEFAULT_TIMER_OVER_LIMIT_BACKOFF;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -111,6 +130,25 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
     validatorsResultsOutputMaxSize = maxSize;
+    return this;
+  }
+
+  public long getTimerLimit() {
+    return timerLimit;
+  }
+
+  public EngineConfiguration setTimerLimit(final long timerLimit) {
+    this.timerLimit = timerLimit;
+    return this;
+  }
+
+  public ExponentialBackoff getTimerOverLimitBackoff() {
+    return timerOverLimitBackoff;
+  }
+
+  public EngineConfiguration setTimerOverLimitBackoff(
+      final ExponentialBackoff timerOverLimitBackoff) {
+    this.timerOverLimitBackoff = timerOverLimitBackoff;
     return this;
   }
 }

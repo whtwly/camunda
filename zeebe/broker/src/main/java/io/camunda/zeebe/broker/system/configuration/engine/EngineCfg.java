@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.util.ExponentialBackoff;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -17,6 +18,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private CachesCfg caches = new CachesCfg();
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
+  private TimersCfg timers = new TimersCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -24,6 +26,7 @@ public final class EngineCfg implements ConfigurationEntry {
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
+    timers.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -58,6 +61,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.validators = validators;
   }
 
+  public TimersCfg getTimers() {
+    return timers;
+  }
+
+  public void setTimers(final TimersCfg timers) {
+    this.timers = timers;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -69,6 +80,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobs
         + ", validators="
         + validators
+        + ", timers="
+        + timers
         + '}';
   }
 
@@ -81,6 +94,13 @@ public final class EngineCfg implements ConfigurationEntry {
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
-        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize());
+        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+        .setTimerLimit(timers.getLimit())
+        .setTimerOverLimitBackoff(
+            new ExponentialBackoff(
+                timers.getBackoffMaxValue(),
+                timers.getBackoffMinValue(),
+                timers.getBackoffFactor(),
+                timers.getBackoffJitterFactor()));
   }
 }
