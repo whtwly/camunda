@@ -167,3 +167,9 @@ COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 USER 1001:1001
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
+
+USER root
+RUN chmod +x /usr/local/bin/startup.sh
+RUN groupadd --gid 1500 zeebe && \
+    useradd -D -h /usr/local -G zeebe -u 1500 zeebe # buildkit
+USER 1500:1500
