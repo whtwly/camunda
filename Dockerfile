@@ -110,6 +110,7 @@ ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
+ARG CAMUNDA_USER_ID=1500
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
@@ -151,25 +152,19 @@ VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
-RUN groupadd --gid 1001 camunda && \
-    useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+RUN groupadd --gid ${CAMUNDA_USER_ID} camunda && \
+    useradd --system --gid ${CAMUNDA_USER_ID} --uid ${CAMUNDA_USER_ID} --home ${ZB_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${ZB_HOME}/data && \
     mkdir ${ZB_HOME}/logs && \
-    chown -R 1001:0 ${ZB_HOME} && \
+    chown -R ${CAMUNDA_USER_ID}:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
-COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
-COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
+COPY --link --chown=${CAMUNDA_USER_ID}:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
+COPY --from=dist --chown=${CAMUNDA_USER_ID}:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
-USER 1001:1001
+USER ${CAMUNDA_USER_ID}:${CAMUNDA_USER_ID}
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
-
-USER root
-RUN chmod +x /usr/local/bin/startup.sh
-RUN groupadd --gid 1500 zeebe && \
-    useradd -D -h /usr/local -G zeebe -u 1500 zeebe # buildkit
-USER 1500:1500
